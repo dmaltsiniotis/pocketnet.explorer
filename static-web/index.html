@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css">
+        <link rel="stylesheet" href="css/pne.css">
+
+        <title>Pocketnet Node Explorer</title>
+    </head>
+
+    <body>
+        <div id="pneapp">
+            <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+                <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">Pocketnet Node Explorer</a>
+                <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+    
+                <ul class="navbar-nav px-3">
+                    <li class="nav-item text-nowrap">
+                        <!-- <router-link v-if="!loggedin" class="nav-link" active-class="active" to="/login">
+                            Sign In
+                        </router-link>
+                        <router-link v-if="loggedin" class="nav-link" active-class="active" to="/logout">
+                            Sign Out
+                        </router-link> -->
+                    </li>
+                </ul>
+            </header>
+    
+            <div class="container-fluid min-vh-100">
+                <div class="row">
+                    <div class="col-2">
+    
+                        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+                            <div class="position-sticky pt-3">
+                                <ul class="nav flex-column">
+                                    <li class="nav-item">
+                                        <router-link class="nav-link" active-class="active" to="/">
+                                            <span data-feather="home"></span>
+                                            Home
+                                        </router-link>
+                                    </li>
+                                </ul>
+
+                                <!-- <ul class="nav flex-column">
+                                    <li class="nav-item">
+                                        <router-link class="nav-link" active-class="active" to="/blockexplorer">
+                                            <span data-feather="grid"></span>
+                                            Block Explorer
+                                        </router-link>
+                                    </li>
+                                </ul> -->
+    
+                                <ul class="nav flex-column">
+                                    <li class="nav-item">
+                                        <router-link class="nav-link" active-class="active" to="/nodetable">
+                                            <span data-feather="server"></span>
+                                            Node List
+                                        </router-link>
+                                    </li>
+                                </ul>
+
+                                <ul class="nav flex-column">
+                                    <li class="nav-item">
+                                        <router-link class="nav-link" active-class="active" to="/nodeinfo">
+                                            <span data-feather="align-justify"></span>
+                                            Node Info
+                                        </router-link>
+                                    </li>
+                                </ul>
+
+                                <ul class="nav flex-column">
+                                    <li class="nav-item">
+                                        <router-link class="nav-link" active-class="active" to="/nodegraph">
+                                            <span data-feather="git-pull-request"></span>
+                                            Network Graph
+                                        </router-link>
+                                    </li>
+                                </ul>
+
+                                <!-- <ul class="nav flex-column">
+                                    <li class="nav-item">
+                                        <router-link class="nav-link" active-class="active" to="/nodeforks">
+                                            <span data-feather="server"></span>
+                                            Forks
+                                        </router-link>
+                                    </li>
+                                </ul> -->
+
+                            </div>
+                        </nav>
+                    </div>
+                    <div class="col-10">
+                        <router-view></router-view>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="js/lib/jquery/jquery-3.5.1.slim.min.js"></script>
+        <script src="js/lib/other/popper.min.js"></script>
+        <script src="js/lib/bootstrap/bootstrap.min.js"></script>
+        
+        <script src="js/lib/cytoscape/cytoscape.min.js"></script>
+        <script src="js/lib/cytoscape/cose-bilkent/layout-base.js"></script>
+        <script src="js/lib/cytoscape/cose-bilkent/cose-base.js"></script>
+        <script src="js/lib/cytoscape/cose-bilkent/cytoscape-cose-bilkent.js"></script>
+
+        <script src="js/lib/other/feather.min.js"></script>
+        <script src="js/lib/other/axios.min.js"></script>
+
+        <script src="js/lib/vue/vue.global.js"></script>
+        <script src="js/lib/vue/vue-router.global.js"></script>
+        <script src="js/lib/vue/vue3-sfc-loader.js"></script>
+
+        <script src="js/app/vue-loader.js"></script>
+        <script src="js/app/pne.js"></script>
+    </body>
+</html>
