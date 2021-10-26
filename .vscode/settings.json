@@ -1,0 +1,15 @@
+{
+    "jslint.enable": true,
+    "jslint.version": "es6",
+    "jslint.exclude": {
+        "vetur.config.js": true,
+        "static-web/js/lib/*": true,
+        "static-web/js/app/*": true
+    },
+    "jslint.options": {
+        "node": true, // Adds: /* global Buffer, clearImmediate, clearInterval, clearTimeout, console, exports, module, process, require, setImmediate, setInterval, setTimeout, URL, URLSearchParams, __dirname, __filename */
+        "long": true, // true if a line can contain more than 80 characters.
+        "devel": true, // Adds: /* global alert, confirm, console, prompt */
+        "this": true // true if `this` should be allowed. 
+    }
+}
