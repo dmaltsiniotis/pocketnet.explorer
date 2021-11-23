@@ -417,6 +417,11 @@
                                         found = true;
                                         break;
                                     }
+                                } else if (typeof propertyToCheck === "number") {
+                                    if (propertyToCheck.toString().includes(keyword)) {
+                                        found = true;
+                                        break;
+                                    }
                                 } else if (typeof propertyToCheck === "object") {
                                     found = recursivePropertySearch(propertyToCheck, keyword);
                                 }
