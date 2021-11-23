@@ -109,7 +109,7 @@
         methods: {
             getnodeinfo: function (peer) {
                 this.error = "";
-                if (peer && peer !== "") {
+                if (peer && peer !== "" && peer.split(":").legnth !== 2) {
                     axios.get('/nodeinfo', {params: {peer: peer}}).then((response) => {
                         if (response.status === 200) {
                             if (response.data && response.data.status === "OK") {
@@ -128,7 +128,7 @@
                         this.error = `${error}`;
                     });
                 } else {
-                    this.error = "Missing peer ip:port info.";
+                    this.error = "Missing peer ip:port info. Dont forget to add \":38081 (or other public RPC port) at the end of the node IP address.\"";
                 }
             }
         }

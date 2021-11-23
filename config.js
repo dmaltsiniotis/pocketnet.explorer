@@ -2,7 +2,8 @@ const config = {
     app: {
         log_level: 1, // This gets set/parsed below.
         web_port: Number(process.env.APP_WEB_PORT || process.env.PORT),
-        web_user_agent: "PKEXPLORER/1.0.0 - The Pocketcoin network explorer"
+        web_user_agent: "PKEXPLORER/1.0.0 - The Pocketcoin network explorer",
+        run_jobs: (process.env.RUN_JOBS === "true" || false)
     },
     timing: {
         tcp_probe_timeout: Number(process.env.TCP_PROBE_TIMEOUT || 5000),                       //  5 second default. How long to wait for TCP network probes.
@@ -17,6 +18,7 @@ const config = {
     debugprint: function (logger) {
         logger.debug(`Configuration loaded:`);
         logger.debug(`App web port: ${config.app.web_port}`);
+        logger.debug(`Run jobs: ${config.app.run_jobs}`);
         logger.debug(`DB uri: ${config.db.uri}`);
         logger.debug(`TCP probe timeout: ${config.timing.tcp_probe_timeout} (${config.timing.tcp_probe_timeout / 1000.0} seconds)`);
         logger.debug(`RPC timeout: ${config.timing.rpc_timeout} (${config.timing.rpc_timeout / 1000.0} seconds)`);

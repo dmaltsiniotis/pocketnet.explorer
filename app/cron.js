@@ -17,7 +17,7 @@ const refreshAllNodesJob = new CronJob(refreshNodesCronSchedule, function () {
             Logger.error(`refreshAllNodesJob - ${refreshAllNodesError}`);
         }
     });
-}, null, true);
+}, null, Config.app.run_jobs);
 
 const refreshAllStatusesJob = new CronJob(everyOneMinute, function () {
     Logger.info(`JOB refreshAllStatusesJob - Running...`);
@@ -29,7 +29,7 @@ const refreshAllStatusesJob = new CronJob(everyOneMinute, function () {
             Logger.error(`refreshAllStatusesJob - ${refreshAllNodeStatusesError}`);
         }
     });
-}, null, true);
+}, null, Config.app.run_jobs);
 
 const Cron = {
     start: function (callback) {

@@ -80,10 +80,15 @@ const app = {
         });
     },
     startCron: function (callback) {
-        logger.info(`Initilizing cron jobs...`);
-        cron.start(function () {
+        if (config.app.run_jobs) {
+            logger.info(`Initilizing cron jobs...`);
+            cron.start(function () {
+                callback();
+            });
+        } else {
+            logger.info(`run_jobs is false, skipping cron jobs...`);
             callback();
-        });
+        }
     },
     shutdownExpress: function (httpServer, callback) {
         logger.info("Shutting down Express...");
