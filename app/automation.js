@@ -3,11 +3,32 @@ const Logger = require("./logger.js");
 const Websocket = require("./websocket.js");
 const Models = require("./models/models.js");
 const Enums = require("./enums/enums.js");
+const Utils = require("./utils.js");
 const RPCApi = require("./rpc_api.js");
 const Net = require("net");
+const Dns = require('dns');
 const Async = require("async");
 
+function _checkIp(addressToCheck, callback) {
+    const isIpResult = Net.isIP(addressToCheck);
+    if (isIpResult !== 0) {
+        callback(null, addressToCheck); // this will return an ipv4 or ipv6.
+    } else {
+        Dns.lookup(addressToCheck, (dnsError, resolvedAddress, family) => {
+            if (!dnsError) {
+                Logger.debug(`_checkIp: Resolved '${addressToCheck}' to ${resolvedAddress} wtih family ${family}.`);
+                callback(null, resolvedAddress);
+            } else {
+                // Logger.error(`_checkIp: Unable to resolve ${addressToCheck} to an IP address:`);
+                // Logger.error(dnsError);
+                callback(dnsError, addressToCheck);
+            }
+        });
+    }
+}
+
 function _addNewNode(newNode, callback) {
+    //Logger.debug(`_addNewNode: ${newNode.tcp_ipv4_address}...`);
     // TODO: Filter out local networks from public peers. Or maybe mark them as private to skip info gathering later.
     /*
     RFC 1918 name               IP address range    Number of addresses    Largest CIDR block (subnet mask) Host ID size   Mask bits    Classful description
@@ -16,47 +37,61 @@ function _addNewNode(newNode, callback) {
     16-bit block    192.168.0.0 – 192.168.255.255   65536                  192.168.0.0/16 (255.255.0.0)       16 bits      16 bits      256 contiguous class C networks
     */
     if (newNode && newNode.tcp_ipv4_address && newNode.tcp_ipv4_address !== null) {
-        //Logger.debug(`_addNewNode: Adding peer node ${newNode.tcp_ipv4_address}...`);
-        Models.Node.findOne({tcp_ipv4_address: newNode.tcp_ipv4_address}, function (findNodeError, findNodeData) {
-            if (!findNodeError) {
-                if (findNodeData) {
-                    Websocket.emit("public", "some channel", Enums.websocketevent.NodeSeenAsPeer, findNodeData.tcp_ipv4_address);
-                    //Logger.debug(`_addNewNode: Updating last seen on node ${findNodeData.addr.toString()}.`); // This is too verbose.
-                    if (newNode.last_seen_as_peer !== undefined) {
-                        findNodeData.last_seen_as_peer = Date.now();
-                        findNodeData.save(function (saveError) {
-                            callback(saveError);
-                        });
+        _checkIp(newNode.tcp_ipv4_address, function (checkIpError, checkIpResult) {
+            if (!checkIpError) {
+                newNode.tcp_ipv4_address = checkIpResult;
+            } else {
+                //Logger.warn(checkIpError);
+                Logger.warn(`_addNewNOde: Marking node as "Do not poll" due to bad hostname/ip address: ${newNode.tcp_ipv4_address} ${checkIpError.code || ""}`);
+                newNode.do_not_poll = true;
+                newNode.do_not_poll_reason = "Invalid ip/hostname.";
+            }
+
+            Models.Node.findOne({tcp_ipv4_address: newNode.tcp_ipv4_address}, function (findNodeError, findNodeData) {
+                if (!findNodeError) {
+                    if (findNodeData) {
+                        Websocket.emit("public", "some channel", Enums.websocketevent.NodeSeenAsPeer, findNodeData.tcp_ipv4_address);
+                        //Logger.debug(`_addNewNode: Updating last seen on node ${findNodeData.addr.toString()}.`); // This is too verbose.
+                        if (newNode.last_seen_as_peer !== undefined) {
+                            findNodeData.last_seen_as_peer = Date.now();
+                            findNodeData.save(function (saveError) {
+                                if (saveError) {
+                                    Logger.error(saveError);
+                                }
+                                callback();
+                            });
+                        } else {
+                            callback();
+                        }
                     } else {
-                        callback();
+                        Logger.debug(`_addNewNode: Creating new node ${newNode.tcp_ipv4_address.toString()}.`);
+                        Models.Node.create(newNode, function (createNodeError, createNodeData) {
+                            if (!createNodeError) {
+                                Websocket.emit("public", "some channel", Enums.websocketevent.NewNode, createNodeData.tcp_ipv4_address);
+                            } else {
+                                Logger.error("_addNewNode: Create Error. Trying to create new node in mongodb. The error:");
+                                Logger.error(createNodeError);
+                                Logger.error("_addNewNode: The model: ");
+                                Logger.error(newNode);
+
+                                // Check if this was a unique index constraint error because the node already exists
+                                //  and _addNewNode was called in parallel by the callee...
+                                // if (createNodeError && createNodeError.code && createNodeError.code === 11000) {
+                                //     Websocket.emit("public", "some channel", Enums.websocketevent.NodeSeenAsPeer, findNodeData.tcp_ipv4_address);
+                                // }
+                            }
+                            callback();
+                        });
                     }
                 } else {
-                    Logger.debug(`_addNewNode: Creating new node ${newNode.tcp_ipv4_address.toString()}.`);
-                    Models.Node.create(newNode, function (createNodeError, createNodeData) {
-                        if (!createNodeError) {
-                            Websocket.emit("public", "some channel", Enums.websocketevent.NewNode, createNodeData.tcp_ipv4_address);
-                        } else {
-                            Logger.error("_addNewNode: Create Error. Trying to create new node in mongodb. The error:");
-                            Logger.error(createNodeError);
-                            Logger.error("_addNewNode: The model: ");
-                            Logger.error(newNode);
-
-                            // Check if this was a unique index constraint error because the node already exists
-                            //  and _addNewNode was called in parallel by the callee...
-                            // if (createNodeError && createNodeError.code && createNodeError.code === 11000) {
-                            //     Websocket.emit("public", "some channel", Enums.websocketevent.NodeSeenAsPeer, findNodeData.tcp_ipv4_address);
-                            // }
-                        }
-                        callback(createNodeError);
-                    });
+                    Logger.error(findNodeError);
+                    callback();
                 }
-            } else {
-                callback(findNodeError);
-            }
+            });
         });
-
     } else {
-        callback("Missing newNode or newNode.tcp_ipv4_address is not set.");
+        Logger.error("Missing newNode or newNode.tcp_ipv4_address is not set.");
+        callback();
     }
 }
 
@@ -164,7 +199,10 @@ function _probeNodeTcpPortsAndUpdateStatus(node, callback) {
             //     Logger.debug(probingResult)
             // }
             Logger.debug(`_probeNodeTcpPortsAndUpdateStatus: Done probing TCP ports for node: ${node.tcp_ipv4_address}`);
-            node.save(function () {
+            node.save(function (nodeSaveError) {
+                if (nodeSaveError) {
+                    Logger.error(nodeSaveError);
+                }
                 callback();
             });
         });
@@ -185,23 +223,32 @@ function _updateNodeInfo(node, callback) {
             } else {
                 node.node_info_status = `Error updating info: ${(proxyCmdError.code || proxyCmdError.toString())}.`;
             }
-            node.save(function () {
+            node.save(function (nodeSaveError) {
+                if (nodeSaveError) {
+                    Logger.error(nodeSaveError);
+                }
                 callback();
             });
         });
     } else {
         node.node_info_status = `Not updating node info because RPC port is not open.`;
-        node.save(function () {
+        node.save(function (nodeSaveError) {
+            if (nodeSaveError) {
+                Logger.error(nodeSaveError);
+            }
             callback();
         });
     }
 }
 
 function _extractNodesFromPeer(peernode, callback) {
-    const peer_addr = peernode.addr.split(":");
-    const tcp_ipv4_address = peer_addr[0];
+    const peer_addr = Utils.splitAddressAndPort(peernode.addr);
+    let tcp_ipv4_address = peer_addr.address;
+    let tcp_ipv6_address = null;
+    //TODO do some DNS lookups here and determin ipv4/6
     const newNode = {
         tcp_ipv4_address: tcp_ipv4_address,
+        tcp_ipv6_address: tcp_ipv6_address,
         last_seen_as_peer: Date.now()
     };
     _addNewNode(newNode, callback);
@@ -224,33 +271,72 @@ function _extractNodesFromPeers(node, callback) {
     }
 }
 
+// Hack...
+function _normalizePeerAddresses(peer_info, callback) {
+    if (peer_info && peer_info.length > 0) {
+        Async.each(peer_info, function (peer, callback) {
+            const addressAndPort = Utils.splitAddressAndPort(peer.addr);
+            _checkIp(addressAndPort.address, function (_checkIpError, _checkIpResult) {
+                if (!_checkIpError) {
+                    peer.addr = `${_checkIpResult}${addressAndPort.port ? (":" + addressAndPort.port) : ""}`;
+                    callback();
+                } else {
+                    Logger.warn(`Unable to normalize peer address: ${peer.addr}`);
+                    Logger.warn(error);
+                    callback();
+                }
+            });
+        }, function (error) {
+            if (error) {
+                Logger.error(error);
+            }
+            callback(peer_info);
+        });
+    } else {
+        callback(peer_info);
+    }
+}
+
 function _updateNodePeerInfo(node, callback) {
     if (node.status_port_publicrpc === Enums.tcpprobestatus.Open) {
         const rpcCmd = RPCApi.genericRPCCall("getpeerinfo");
         RPCApi.proxycmd(node.rpcaddr, rpcCmd, function (proxyCmdError, proxyCmdData) {
             if (!proxyCmdError) {
-                node.peer_info = proxyCmdData;
-                node.last_queried_peers = Date.now();
-                node.peer_info_status = `Peer info updated sucessfully`;
-
-                node.save(function () {
-                    _extractNodesFromPeers(node, function (_extractNodesFromPeersError, ignore) {
-                        if (_extractNodesFromPeersError) {
-                            Logger.error(_extractNodesFromPeersError);
+                _normalizePeerAddresses(proxyCmdData, function (ignore) {
+                    node.peer_info = proxyCmdData;
+                    node.last_queried_peers = Date.now();
+                    node.peer_info_status = `Peer info updated sucessfully`;
+    
+                    node.save(function (nodeSaveError) {
+                        if (!nodeSaveError) {
+                            _extractNodesFromPeers(node, function (_extractNodesFromPeersError, ignore) {
+                                if (_extractNodesFromPeersError) {
+                                    Logger.error(_extractNodesFromPeersError);
+                                }
+                                callback();
+                            });
+                        } else {
+                            Logger.error(nodeSaveError);
+                            callback(nodeSaveError);
                         }
-                        callback();
                     });
                 });
             } else {
                 node.peer_info_status = `Error updating peers: ${(proxyCmdError.code || proxyCmdError.toString())}.`;
-                node.save(function () {
+                node.save(function (nodeSaveError) {
+                    if (nodeSaveError) {
+                        Logger.error(nodeSaveError);
+                    }
                     callback();
                 });
             }
         });
     } else {
         node.peer_info_status = `Not updating node peers because RPC port is not open.`;
-        node.save(function () {
+        node.save(function (nodeSaveError) {
+            if (nodeSaveError) {
+                Logger.error(nodeSaveError);
+            }
             callback();
         });
     }
@@ -270,7 +356,10 @@ function _updateNodeStatus(node, callback) {
         }
     }
 
-    node.save(function () {
+    node.save(function (nodeSaveError) {
+        if (nodeSaveError) {
+            Logger.error(nodeSaveError);
+        }
         callback();
     });
 }
@@ -401,11 +490,20 @@ const Automation = {
     refreshAllNodes: function (callback) {
         Logger.debug("refreshAllNodes:");
         const node_info_refresh_age_limit = Date.now() - Config.timing.node_info_refresh_age_limit;
-        const query = {"$or": [
-            {status: {"$eq": Enums.nodestatus.New}},
-            {last_updated: {"$eq": null}},
-            {last_updated: {"$lt": node_info_refresh_age_limit}}
-        ]};
+        const query = { "$and":
+        [
+            {
+                do_not_poll: false
+            },
+            {
+                "$or": [
+                    {status: {"$eq": Enums.nodestatus.New}},
+                    {last_updated: {"$eq": null}},
+                    {last_updated: {"$lt": node_info_refresh_age_limit}}
+                ]
+            }
+        ]
+        };
         Logger.debug(`
 Now: ${new Date()}
 Before: ${new Date(node_info_refresh_age_limit)}`);

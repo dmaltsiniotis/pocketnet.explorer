@@ -5,6 +5,7 @@ const ApiUtils = require("./api_utils.js");
 const Websocket = require("./websocket.js");
 const Models = require("./models/models.js");
 const Enums = require("./enums/enums.js");
+const Utils = require("./utils.js");
 const RPCApi = require("./rpc_api.js");
 const Automation = require("./automation.js");
 
@@ -118,13 +119,13 @@ const api = {
                                     verinfo[1] = verinfo[1].replace("/", "");
                                 }
                                 peer.version = verinfo[1] || peer.subver;
-                            } else {
+                            } else if (peer.version) {
                                 peer.version = "Unknown";
                             }
 
-                            const addrinfo = peer.addr.split(":");
-                            peer.tcp_ipv4_address = addrinfo[0];
-                            peer.tcp_port_blockhain = addrinfo[1] || 37070;
+                            const addrinfo =  Utils.splitAddressAndPort(peer.addr);
+                            peer.tcp_ipv4_address = addrinfo.address;
+                            peer.tcp_port_blockhain = addrinfo.port || 37070;
 
                             delete peer.addr;
                             delete peer.subver;

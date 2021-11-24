@@ -63,21 +63,27 @@
                     <th scope="col">Id</th>
                     <th scope="col">Addr</th>
                     <th scope="col">Version</th>
-                    <th scope="col">Synced Blocks</th>
+                    <th scope="col">Starting Height</th>
+                    <th scope="col">Inbound</th>
+                    <th scope="col">Addnode</th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="(peer) in peerInfo" :key="peer.id">
                     <td>{{peer.id}}</td>
                     <td>{{peer.addr}}</td>
-                    <td>{{peer.subver}}</td>
-                    <td>{{peer.synced_blocks}}</td>
+                    <td>{{peer.subver || peer.version}}</td>
+                    <td>{{peer.startingheight}}</td>
+                    <td>{{peer.inbound}}</td>
+                    <td>{{peer.addnode}}</td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr class="">
                     <td>Total</td>
                     <td>{{peerInfo.length}}</td>
+                    <td></td>
+                    <td></td>
                     <td></td>
                     <td></td>
                 </tr>

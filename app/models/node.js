@@ -9,7 +9,10 @@ const nodeSchema = new Schema(Object.assign({
     added_manually: {type: Boolean, required: false, default: false},
     last_updated: {type: Date, required: false, default: null},
     //next_update: {type: Date, required: false, default: null},
+    do_not_poll: {type: Boolean, required: false, default: false},
+    do_not_poll_reason: {type: String, required: false, default: ""},
     tcp_ipv4_address: {type: String, required: true},
+    tcp_ipv6_address: {type: String, required: false, default: null},
     tcp_port_blockhain: {type: String, required: false, default: "37070"}, // This will be given to us by the peer list info.
     tcp_port_publicrpc: {type: String, required: false, default: "38081"}, // This is unknowable at this time. Just going to try the default.
     tcp_port_websocket: {type: String, required: false, default: "8087"}, // This is unknowable at this time. Just going to try the default.
@@ -54,7 +57,8 @@ const nodeSchema = new Schema(Object.assign({
         timeoffset: {type: Number},
         pingtime: {type: Number}, // Change to Decimal128 ?
         minping: {type: Number}, // Change to Decimal128 ?
-        version: {type: Number},
+        protocol: {type: Number}, // Added in 0.20.x.
+        version: {type: String}, // Added in 0.20.x. This was changed from Number to String, using this field instead of the subver field in the new version.
         subver: {type: String},
         inbound: {type: Boolean},
         addnode: {type: Boolean},
