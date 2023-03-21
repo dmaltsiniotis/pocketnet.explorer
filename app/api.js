@@ -1,10 +1,11 @@
-//const Config = require("../config.js");
+const Config = require("../config.js");
 const Logger = require("./logger.js");
 const ApiUtils = require("./api_utils.js");
 //const http = require("http");
 const Websocket = require("./websocket.js");
 const Models = require("./models/models.js");
 const Enums = require("./enums/enums.js");
+const Consts = require("./consts.js");
 const Utils = require("./utils.js");
 const RPCApi = require("./rpc_api.js");
 const Automation = require("./automation.js");
@@ -45,7 +46,7 @@ const api = {
         },
         clearnodes: function (ignore, response) {
             Models.Node.deleteMany({}, function (removeError) {
-                Websocket.emit("public", "some channel", "clear_all_nodes", null);
+                Websocket.emit(Enums.WebsocketVisibility.Public, Enums.WebsocketChannel.Broadcast, Enums.WebsocketEvent.AllNodesCleared, {});
                 ApiUtils.apiResponseGeneric(response, removeError, "Cleared all nodes.");
             });
         },
@@ -55,7 +56,7 @@ const api = {
                     ApiUtils.apiResponseGeneric(response, newNodeError, newNodeData);
                 });
             } else {
-                ApiUtils.apiError(response, "Missing 'ip' or 'blockchainport' query parameters.");
+                ApiUtils.apiError(response, "Missing 'ip' query parameters.");
             }
         },
         refreshnodeinfo: function (request, response) {
@@ -99,25 +100,8 @@ const api = {
             } else {
                 query.status = {"$in": [Enums.nodestatus.New, Enums.nodestatus.Open, Enums.nodestatus.Hidden]};
             }
-            const projection = {
-                "_id": true,
-                tcp_ipv4_address: true,
-                last_updated: true,
-                last_seen_as_peer: true,
-                status: true,
-                label: true,
-                status_port_blockhain: true,
-                status_port_publicrpc: true,
-                status_port_websocket: true,
-                node_info: true,
-                "peer_info._id": true,
-                "peer_info.addr": true,
-                "peer_info.subver": true,
-                "peer_info.inbound": true,
-                "peer_info.addnode": true,
-                block_info: true
-            };
-            Models.Node.find(query, projection, {lean: true}, function (findNodesError, findNodesData) {
+
+            Models.Node.find(query, Consts.DefaultNodeDataProjection, {lean: true}, function (findNodesError, findNodesData) {
                 findNodesData.forEach(function (node) {
                     if (!node.node_info.version || node.node_info.version === "") {
                         node.node_info.version = "Unknown";
@@ -166,7 +150,8 @@ const api = {
                 tcp_ipv4_address: true,
                 tcp_port_publicrpc: true,
                 label: true,
-                'node_info.version': true
+                'node_info.version': true,
+                'node_info.lastblock.height': true
             };
 
             Models.Node.find(query, projection, {lean: true}, function (findNodesError, findNodesData) {
@@ -174,8 +159,8 @@ const api = {
             });
         },
         searchbyhash: function (request, response) {
-            if (request.query.peer && request.query.searchparam) {
-                const searchbyhashRequest = RPCApi.genericRPCCall("searchbyhash", {value: request.query.searchparam});
+            if (request.query.peer && request.query.hash) {
+                const searchbyhashRequest = RPCApi.genericRPCCall("searchbyhash", [request.query.hash]);
                 RPCApi.proxycmd(request.query.peer, searchbyhashRequest, function (searchbyhashError, searchbyhashResponse) {
                     ApiUtils.apiResponseGeneric(response, searchbyhashError, searchbyhashResponse);
                 });
@@ -184,54 +169,85 @@ const api = {
             }
         },
         getlastblocks: function (request, response) {
-            ApiUtils.apiError(response, "Not yet implemented");
+            let count = request.query.count || 10;
+            count = Number(count);
+
+            let last_height = request.query.last_height || -1;
+            last_height = Number(last_height);
+
+            let verbose = request.query.verbose || "false";
+            verbose = (verbose.toLowerCase() === "true");
+
+            const getLastBlocksCmd = RPCApi.genericRPCCall("getlastblocks", [count, last_height, verbose]);
+            RPCApi.proxycmd(request.query.peer, getLastBlocksCmd, function (getLastBlocksError, getLastBlocksResponse) {
+                ApiUtils.apiResponseGeneric(response, getLastBlocksError, getLastBlocksResponse);
+            });
+        },
+        getcompactblock: function (request, response) {
+            const getCompactBlockCmd = RPCApi.genericRPCCall("getcompactblock", [request.query.hash, request.query.number || -1]);
+            RPCApi.proxycmd(request.query.peer, getCompactBlockCmd, function (getCompactBlockError, getCompactBlockResponse) {
+                ApiUtils.apiResponseGeneric(response, getCompactBlockError, getCompactBlockResponse);
+            });
         },
         getblocktransactions: function (request, response) {
-            ApiUtils.apiError(response, "Not yet implemented");
+            let blockhash = request.query.hash;
+
+            let pageStart = request.query.pageStart || 0;
+            pageStart = Number(pageStart);
+
+            let pageSize = request.query.pageSize || 10;
+            pageSize = Number(pageSize);
+
+            const getBlockTransactionsCmd = RPCApi.genericRPCCall("getblocktransactions", [blockhash, pageStart, pageSize]);
+            RPCApi.proxycmd(request.query.peer, getBlockTransactionsCmd, function (getBlockTransactionsError, getBlockTransactionsResponse) {
+                ApiUtils.apiResponseGeneric(response, getBlockTransactionsError, getBlockTransactionsResponse);
+            });
+        },
+        gettransactions: function (request, response) {
+            const getTransactionsCmd = RPCApi.genericRPCCall("gettransactions", {transactions: request.query.hash});
+            RPCApi.proxycmd(request.query.peer, getTransactionsCmd, function (getTransactionsError, getTransactionsResponse) {
+                ApiUtils.apiResponseGeneric(response, getTransactionsError, getTransactionsResponse);
+            });
+        },
+        getaddressinfo: function (request, response) {
+            const getAddressTransactionsCmd = RPCApi.genericRPCCall("getaddressinfo", { address: request.query.hash });
+            RPCApi.proxycmd(request.query.peer, getAddressTransactionsCmd, function (getAddressInfoError, getAddressInfoResponse) {
+                ApiUtils.apiResponseGeneric(response, getAddressInfoError, getAddressInfoResponse);
+            });
         },
         getaddresstransactions: function (request, response) {
-            ApiUtils.apiError(response, "Not yet implemented");
-        },
-        search: function (request, response) {
-            Logger.debug(request.query);
-            if (request.query.peer && request.query.hash) {
-                const searchbyhashRequest = RPCApi.genericRPCCall("searchbyhash", {value: request.query.hash});
-                RPCApi.proxycmd(request.query.peer, searchbyhashRequest, function (searchbyhashError, searchbyhashResponse) {
-                    if (!searchbyhashError) {
-                        Logger.debug(searchbyhashResponse);
-                        if (searchbyhashResponse.type === Enums.hashtype.Block) {
-                            const searchByBlockHashCmd = RPCApi.genericRPCCall("searchbyhash", {value: request.query.hash});
-                        } else if (searchbyhashResponse.type === Enums.hashtype.Transaction) {
-                            const searchByTransactionHashCmd = RPCApi.genericRPCCall("gettransactions", {transactions: request.query.hash});
-                        } else if (searchbyhashResponse.type === Enums.hashtype.Address) {
-                            const searchByAddressHashCmd = RPCApi.genericRPCCall("getaddresstransactions", {address: request.query.hash});
-                        } else {
-                            // Unknown type...
-                            ApiUtils.apiError(response, `I'm not sure how to handle a hash type of "${searchbyhashResponse.type}" yet. `);
-                        }
-                        ApiUtils.apiError(response, "Not yet implemented");
-                    } else {
-                        ApiUtils.apiError(response, searchbyhashError);
-                    }
-                });
-            } else {
-                ApiUtils.apiError(response, "Missing 'peer' or 'hash' parameter.");
+            let address = request.query.hash;
+
+            let pageInitBlock = request.query.pageInitBlock || null;
+            if (pageInitBlock) {
+                pageInitBlock = Number(pageInitBlock);
             }
+
+            let pageStart = request.query.pageStart || 0;
+            pageStart = Number(pageStart);
+
+            let pageSize = request.query.pageSize || 10;
+            pageSize = Number(pageSize);
+
+            const getAddressTransactionsCmd = RPCApi.genericRPCCall("getaddresstransactions", [address, pageInitBlock, pageStart, pageSize ]);
+            RPCApi.proxycmd(request.query.peer, getAddressTransactionsCmd, function (getAddressTransactionsError, getAddressTransactionsResponse) {
+                ApiUtils.apiResponseGeneric(response, getAddressTransactionsError, getAddressTransactionsResponse);
+            });
         }
     },
     post: {
-        proxycmd: function (request, response) {
-            RPCApi.proxycmd(request.query.peer, request.body, function (error, data) {
-                ApiUtils.apiResponseGeneric(response, error, data);
-            });
-        },
+        // proxycmd: function (request, response) {
+        //     RPCApi.proxycmd(request.query.peer, request.body, function (error, data) {
+        //         ApiUtils.apiResponseGeneric(response, error, data);
+        //     });
+        // },
         newnodes: function (request, response) {
             if (request.body.ips && request.body.ips !== null) {
                 Automation.newNodes(request.body.ips, function (newNodeError, newNodeData) {
                     ApiUtils.apiResponseGeneric(response, newNodeError, newNodeData);
                 });
             } else {
-                ApiUtils.apiError(response, "Missing 'ip' or 'blockchainport' query parameters.");
+                ApiUtils.apiError(response, "Missing 'ip' query parameter.");
             }
         }
     }

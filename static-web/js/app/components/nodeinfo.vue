@@ -236,7 +236,7 @@
                         this.error = `${error}`;
                     });
                 } else {
-                    this.error = "Missing peer ip:port info. Dont forget to add \":38081 (or other public RPC port) at the end of the node IP address.\"";
+                    this.error = "Missing peer ip:port info. Don't forget to add \":38081 (or other public RPC port) at the end of the node IP address.\"";
                 }
             },
             changepeer: function (newpeeraddr) {

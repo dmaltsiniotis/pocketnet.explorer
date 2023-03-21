@@ -2,8 +2,10 @@ const Enums = function () {
     return {
         nodestatus: require("./nodestatus.js"),
         tcpprobestatus: require("./tcpprobestatus.js"),
-        websocketevent: require("./websocket_event.js"),
         hashtype: require("./hashtype.js"),
+        WebsocketEvent: require("./websocketevent.js"),
+        WebsocketVisibility: require("./websocketvisibility.js"),
+        WebsocketChannel: require("./websocketchannel.js"),
 
         returnEnumValuesAsArray: function(enumObject) {
             let retVal = [];

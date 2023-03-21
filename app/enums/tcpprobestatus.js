@@ -5,7 +5,7 @@ const NodeStatus = function () {
         Closed: "closed",
         Timeout: "timeout",
         Error: "error"
-    }
+    };
 };
 
-module.exports = NodeStatus()
+module.exports = NodeStatus();

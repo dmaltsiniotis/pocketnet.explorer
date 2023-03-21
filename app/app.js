@@ -9,6 +9,7 @@ const mongoose = require("mongoose");
 const api = require("./api.js");
 const cron = require("./cron.js");
 const expresMiddleware = require("./middleware/expressmiddleware.js");
+const websockets = require("./websocket.js");
 
 function _initDatabase(callback) {
     mongoose.set("bufferCommands", false);
@@ -57,17 +58,17 @@ function _registerApiEndpoints(expressApp) {
 
 const app = {
     initDatabase: function (callback) {
-        logger.info("Initilizing database...");
+        logger.info("Initializing database...");
         _initDatabase(callback);
     },
     initExpress: function (expressApp, callback) {
-        logger.info("Initilizing express static content...");
+        logger.info("Initializing express static content...");
         _initExpresStaticContent(expressApp);
 
-        logger.info("Initilizing express middleware...");
+        logger.info("Initializing express middleware...");
         _initExpressMiddleware(expressApp);
 
-        logger.info("Initilizing express API endpoints...");
+        logger.info("Initializing express API endpoints...");
         _registerApiEndpoints(expressApp);
 
         callback();
@@ -76,12 +77,23 @@ const app = {
         const httpServer = http.createServer(expressApp);
         httpServer.listen(config.app.web_port, function () {
             logger.info(`Web app is now ready and listening on port ${config.app.web_port}.`);
-            callback(null, httpServer);
+
+            logger.info("Starting Websockets...");
+            websockets.start(httpServer, function (error, ws_server) {
+                if (!error) {
+                    logger.info("Websocket server started.");
+                } else {
+                    logger.error(error);
+                }
+                callback(null, httpServer);
+            });
+
+            //callback(null, httpServer);
         });
     },
     startCron: function (callback) {
         if (config.app.run_jobs) {
-            logger.info(`Initilizing cron jobs...`);
+            logger.info(`Initializing cron jobs...`);
             cron.start(function () {
                 callback();
             });
@@ -89,6 +101,13 @@ const app = {
             logger.info(`run_jobs is false, skipping cron jobs...`);
             callback();
         }
+    },
+    shutdownWebsockets: function (callback) {
+        logger.info("Shutting down Websockets...");
+        websockets.shutdown(function () {
+            logger.info("Websocket server closed.");
+            callback();
+        });
     },
     shutdownExpress: function (httpServer, callback) {
         logger.info("Shutting down Express...");

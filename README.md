@@ -1,6 +1,7 @@
-# Pocketnet Network/Node Explorer
+# Bastyon Network/Node Explorer
 
 ## Overview
+
 This is a web app aimed at visualizing the health and status of the Pocketnet distributed network.
 
 ## Example

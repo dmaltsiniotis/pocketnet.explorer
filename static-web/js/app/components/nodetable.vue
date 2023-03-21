@@ -1,15 +1,22 @@
 <template>
 <div>
     <h1>List of Nodes</h1>
+    <!-- <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div> -->
 
     <div class="row">
         <div class="col">
-            <p class="text-center font-weight-bold">All active nodes<br><label>Include dead nodes? <input type="checkbox" v-model="include_dead" v-on:change="getnodes()"></label></p>
-            <span>Table is now sortable, click the column header to sort by it.</span>
+            <p class="text-center font-weight-bold">
+                All active nodes<br>
+                <label>Include dead nodes? <input type="checkbox" v-model="include_dead"></label>&nbsp;&nbsp;
+                <button type="submit" class="btn btn-primary btn-sm" v-on:click="getnodes()">Refresh Table</button>
+            </p>
+
             <div class="input-group mb-3">
                 <input type="text" class="form-control" placeholder="Filter" aria-label="Search" v-model="nodefilter">
             </div>
-
+            <span class="text-muted">Table is now sortable, click the column header to sort by it.</span>
             <table class="table table-hover">
                 <thead>
                     <tr>
@@ -77,6 +84,13 @@
             this.getnodes(function () {
 
             });
+
+            // TODO: Make this not suck.
+            // let connection = new WebSocket("ws://" + location.host + "/");
+            // connection.onmessage = function (event) {
+            //     let message = JSON.parse(event.data);
+            //     console.log(message);
+            // }
         },
         data: function() {
             return {

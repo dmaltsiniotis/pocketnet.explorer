@@ -1,5 +1,6 @@
 /*jslint this*/
 const Logger = require("./logger.js");
+const Consts = require("./consts.js");
 
 const Utils = {
     splitAddressAndPort: function (addr) {
@@ -13,7 +14,7 @@ const Utils = {
         return {
             address: address,
             port: port
-        }
+        };
     },
     parseVersion: function (satoshiversion) {
         if (satoshiversion) {
@@ -27,4 +28,5 @@ const Utils = {
         }
     }
 };
+
 module.exports = Utils;

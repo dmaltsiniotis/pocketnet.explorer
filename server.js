@@ -24,7 +24,7 @@ function shutdown(signal, httpServer) {
 
         logger.info("Setting a five second timer to wait for gracefully shutdown before force exiting...");
         setTimeout(function () {
-            logger.info("Waited five seconds (should investigate why shutdown took so long), forceing exit process...");
+            logger.info("Waited five seconds (should investigate why shutdown took so long), forcing exit process...");
             const exit_code = (
                 err
                 ? 1

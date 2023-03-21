@@ -3,6 +3,7 @@ const Logger = require("./logger.js");
 const Websocket = require("./websocket.js");
 const Models = require("./models/models.js");
 const Enums = require("./enums/enums.js");
+const Consts = require("./consts.js");
 const Utils = require("./utils.js");
 const RPCApi = require("./rpc_api.js");
 const Net = require("net");
@@ -16,7 +17,7 @@ function _checkIp(addressToCheck, callback) {
     } else {
         Dns.lookup(addressToCheck, function (dnsError, resolvedAddress, family) {
             if (!dnsError) {
-                Logger.debug(`_checkIp: Resolved '${addressToCheck}' to ${resolvedAddress} wtih family ${family}.`);
+                Logger.debug(`_checkIp: Resolved '${addressToCheck}' to ${resolvedAddress} with family ${family}.`);
                 callback(null, resolvedAddress);
             } else {
                 // Logger.error(`_checkIp: Unable to resolve ${addressToCheck} to an IP address:`);
@@ -50,13 +51,13 @@ function _addNode(newNode, callback) {
             Models.Node.findOne({tcp_ipv4_address: newNode.tcp_ipv4_address}, function (findNodeError, findNodeData) {
                 if (!findNodeError) {
                     if (findNodeData) {
-                        Websocket.emit("public", "some channel", Enums.websocketevent.NodeSeenAsPeer, findNodeData.tcp_ipv4_address);
+                        //Websocket.emit(Enums.WebsocketVisibility.Public, Enums.WebsocketChannel.Broadcast, Enums.WebsocketEvent.NodeSeenAsPeer, _applyDefaultProjectionToNode(findNodeData));
                         //Logger.debug(`_addNode: Updating last seen on node ${findNodeData.addr.toString()}.`); // This is too verbose.
                         if (newNode.last_seen_as_peer !== undefined) {
                             findNodeData.last_seen_as_peer = Date.now();
 
-                            // For existing hidden peers, update their verions if we have it. This can probably be removed in the future but is here
-                            //  as exercise in data migration vs blast away and replace.
+                            // For existing hidden peers, update their versions if we have it. This can probably be removed in the future but is here
+                            //  as exercise in data migration vs. blast away and replace.
                             if (newNode.node_info && newNode.node_info.version) {
                                 if (findNodeData.node_info.version !== newNode.node_info.version) {
                                     Logger.warn(`New node version detected as a peer for node ${findNodeData.tcp_ipv4_address} from ${findNodeData.node_info.version} to ${newNode.node_info.version}.`);
@@ -77,7 +78,7 @@ function _addNode(newNode, callback) {
                         Logger.debug(`_addNode: Creating new node ${newNode.tcp_ipv4_address.toString()}.`);
                         Models.Node.create(newNode, function (createNodeError, createNodeData) {
                             if (!createNodeError) {
-                                Websocket.emit("public", "some channel", Enums.websocketevent.NewNode, createNodeData.tcp_ipv4_address);
+                                Websocket.emit(Enums.WebsocketVisibility.Public, Enums.WebsocketChannel.Broadcast, Enums.WebsocketEvent.NewNode, {_id: createNodeData._id, tcp_ipv4_address: createNodeData.tcp_ipv4_address, status: createNodeData.status});
                             } else {
                                 Logger.error("_addNode: Create Error. Trying to create new node in mongodb. The error:");
                                 Logger.error(createNodeError);
@@ -87,7 +88,7 @@ function _addNode(newNode, callback) {
                                 // Check if this was a unique index constraint error because the node already exists
                                 //  and _addNode was called in parallel by the callee...
                                 // if (createNodeError && createNodeError.code && createNodeError.code === 11000) {
-                                //     Websocket.emit("public", "some channel", Enums.websocketevent.NodeSeenAsPeer, findNodeData.tcp_ipv4_address);
+                                //     Websocket.emit(Enums.WebsocketVisibility.Public, Enums.WebsocketChannel.Broadcast, Enums.WebsocketEvent.NodeSeenAsPeer, {_id: createNodeData._id, tcp_ipv4_address: createNodeData.tcp_ipv4_address, status: createNodeData.status});
                                 // }
                             }
                             callback();
@@ -229,7 +230,7 @@ function _updateNodeInfo(node, callback) {
             if (!proxyCmdError) {
                 node.node_info = proxyCmdData;
                 node.last_queried_info = Date.now();
-                node.node_info_status = `Node info updated sucessfully`;
+                node.node_info_status = `Node info updated successfully`;
             } else {
                 node.node_info_status = `Error updating info: ${(proxyCmdError.code || proxyCmdError.toString())}.`;
             }
@@ -246,6 +247,7 @@ function _updateNodeInfo(node, callback) {
             if (nodeSaveError) {
                 Logger.error(nodeSaveError);
             }
+            Websocket.emit(Enums.WebsocketVisibility.Public, Enums.WebsocketChannel.Broadcast, Enums.WebsocketEvent.NodeInfoUpdated, {_id: node._id, tcp_ipv4_address: node.tcp_ipv4_address, status: node.status, node_info: node.node_info});
             callback();
         });
     }
@@ -258,7 +260,7 @@ function _extractNodesFromPeer(peernode, callback) {
     if (Net.isIPv6(peer_addr.address)) {
         tcp_ipv6_address = peer_addr.address;
     } else {
-        // TODO: Move IPv4 assignment to here when ready and the system can handle a null tcp_ipv4 address, or alterntiavely, don't bother and just use a single address.
+        // TODO: Move IPv4 assignment to here when ready and the system can handle a null tcp_ipv4 address, or alternatively, don't bother and just use a single address.
     }
     //TODO do some DNS lookups here and determin ipv4/6
     const extratedPeerNode = {
@@ -329,7 +331,7 @@ function _updatePeerInfo(node, callback) {
                 _normalizePeerAddresses(proxyCmdData, function (ignore) {
                     node.peer_info = proxyCmdData;
                     node.last_queried_peers = Date.now();
-                    node.peer_info_status = `Peer info updated sucessfully`;
+                    node.peer_info_status = `Peer info updated successfully`;
 
                     node.save(function (nodeSaveError) {
                         if (!nodeSaveError) {
@@ -363,6 +365,7 @@ function _updatePeerInfo(node, callback) {
             if (nodeSaveError) {
                 Logger.error(nodeSaveError);
             }
+            Websocket.emit(Enums.WebsocketVisibility.Public, Enums.WebsocketChannel.Broadcast, Enums.WebsocketEvent.NodePeerInfoUpdated, {_id: node._id, tcp_ipv4_address: node.tcp_ipv4_address, status: node.status, peer_info: node.peer_info});
             callback();
         });
     }
@@ -375,7 +378,7 @@ function _updateBlockInfo(node, callback) {
             if (!proxyCmdError) {
                 node.block_info = proxyCmdData;
                 node.last_queried_block = Date.now();
-                node.block_info_status = `Block info updated sucessfully (last 10 blocks polled).`;
+                node.block_info_status = `Block info updated successfully (last 10 blocks polled).`;
 
                 node.save(function (nodeSaveError) {
                     if (!nodeSaveError) {
@@ -392,6 +395,7 @@ function _updateBlockInfo(node, callback) {
                     if (nodeSaveError) {
                         Logger.error(nodeSaveError);
                     }
+                    Websocket.emit(Enums.WebsocketVisibility.Public, Enums.WebsocketChannel.Broadcast, Enums.WebsocketEvent.NodeBlockInfoUpdated, {_id: node._id, tcp_ipv4_address: node.tcp_ipv4_address, status: node.status, block_info: node.block_info});
                     callback();
                 });
             }
@@ -407,13 +411,13 @@ function _updateBlockInfo(node, callback) {
     }
 }
 
-//TODO: This needs to run perodically on _all_ nodes, irrespective of status.
+//TODO: This needs to run periodically on _all_ nodes, irrespective of status.
 function _updateNodeStatus(node, callback) {
     const consider_dead_if_last_seen_older_than = Date.now() - Config.timing.node_considered_dead;
 
     if (node.status_port_blockhain === Enums.tcpprobestatus.Open) {
         node.status = Enums.nodestatus.Open;
-    } else { // The node does hot have its blockchain port open. Check to see if was seen a peer of another node. If so, it's probably alive but in listen=0 mode, or not port forwarded properly.
+    } else { // The node does not have its blockchain port open. Check to see if was seen a peer of another node. If so, it's probably alive but in listen=0 mode, or not port forwarded properly.
         if (node.last_seen_as_peer > consider_dead_if_last_seen_older_than) {
             node.status = Enums.nodestatus.Hidden;
         } else {
@@ -427,6 +431,7 @@ function _updateNodeStatus(node, callback) {
         if (nodeSaveError) {
             Logger.error(nodeSaveError);
         }
+        Websocket.emit(Enums.WebsocketVisibility.Public, Enums.WebsocketChannel.Broadcast, Enums.WebsocketEvent.NodeStatusUpdated, {_id: node._id, tcp_ipv4_address: node.tcp_ipv4_address, status: node.status});
         callback();
     });
 }
