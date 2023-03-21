@@ -1,5 +1,5 @@
-const Config = require("../config.js");
-const Logger = require("./logger.js");
+//const Config = require("../config.js");
+//const Logger = require("./logger.js");
 const ApiUtils = require("./api_utils.js");
 //const http = require("http");
 const Websocket = require("./websocket.js");
@@ -116,7 +116,7 @@ const api = {
                                 peer.version = "Unknown";
                             }
 
-                            const addrinfo =  Utils.splitAddressAndPort(peer.addr);
+                            const addrinfo = Utils.splitAddressAndPort(peer.addr);
                             peer.tcp_ipv4_address = addrinfo.address;
                             peer.tcp_port_blockhain = addrinfo.port || 37070;
 
@@ -150,8 +150,8 @@ const api = {
                 tcp_ipv4_address: true,
                 tcp_port_publicrpc: true,
                 label: true,
-                'node_info.version': true,
-                'node_info.lastblock.height': true
+                "node_info.version": true,
+                "node_info.lastblock.height": true
             };
 
             Models.Node.find(query, projection, {lean: true}, function (findNodesError, findNodesData) {
@@ -210,7 +210,7 @@ const api = {
             });
         },
         getaddressinfo: function (request, response) {
-            const getAddressTransactionsCmd = RPCApi.genericRPCCall("getaddressinfo", { address: request.query.hash });
+            const getAddressTransactionsCmd = RPCApi.genericRPCCall("getaddressinfo", {address: request.query.hash});
             RPCApi.proxycmd(request.query.peer, getAddressTransactionsCmd, function (getAddressInfoError, getAddressInfoResponse) {
                 ApiUtils.apiResponseGeneric(response, getAddressInfoError, getAddressInfoResponse);
             });
@@ -229,7 +229,7 @@ const api = {
             let pageSize = request.query.pageSize || 10;
             pageSize = Number(pageSize);
 
-            const getAddressTransactionsCmd = RPCApi.genericRPCCall("getaddresstransactions", [address, pageInitBlock, pageStart, pageSize ]);
+            const getAddressTransactionsCmd = RPCApi.genericRPCCall("getaddresstransactions", [address, pageInitBlock, pageStart, pageSize]);
             RPCApi.proxycmd(request.query.peer, getAddressTransactionsCmd, function (getAddressTransactionsError, getAddressTransactionsResponse) {
                 ApiUtils.apiResponseGeneric(response, getAddressTransactionsError, getAddressTransactionsResponse);
             });

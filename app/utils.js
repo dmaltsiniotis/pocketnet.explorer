@@ -1,6 +1,6 @@
 /*jslint this*/
-const Logger = require("./logger.js");
-const Consts = require("./consts.js");
+//const Logger = require("./logger.js");
+//const Consts = require("./consts.js");
 
 const Utils = {
     splitAddressAndPort: function (addr) {
