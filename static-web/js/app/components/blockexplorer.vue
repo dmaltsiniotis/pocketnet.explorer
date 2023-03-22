@@ -30,7 +30,7 @@
 
     <div v-show="hashtype === ''">
         <h2>Latest Blocks</h2>
-        <table class="table table-hover" v-show="latetblocks.length > 0">
+        <table class="table table-hover">
             <thead>
                 <tr>
                     <th scope="col" class="table-header" data-bs-toggle="tooltip" data-bs-placement="top" title="Block height.">Height</th>
@@ -40,6 +40,16 @@
                 </tr>
             </thead>
             <tbody>
+                <tr v-show="loading">
+                    <td colspan="4">
+                        <div class="text-center">
+                            <div class="spinner-border" style="width: 10rem; height: 10rem;" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Loading...</p>
+                        </div>
+                    </td>
+                </tr>
                 <tr v-for="(block) in latetblocks" :key="block.hash">
                     <td>{{block.height}}</td>
                     <td><span style="cursor:pointer;" class="link-primary" v-on:click="search(block.hash)">{{block.hash}}</span></td>
@@ -80,6 +90,16 @@
                 </tr>
             </thead>
             <tbody>
+                <tr v-show="loading">
+                    <td colspan="3">
+                        <div class="text-center">
+                            <div class="spinner-border" style="width: 10rem; height: 10rem;" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Loading...</p>
+                        </div>
+                    </td>
+                </tr>
                 <tr v-for="(transaction) in blocktransactions" :key="transaction.txid">
                     <td>{{transaction.height}}</td>
                     <td><span style="cursor:pointer;" class="link-primary" v-on:click="search(transaction.txid)">{{transaction.txid}}</span></td>
@@ -100,6 +120,15 @@
         <h2>Transaction</h2>
         <span>{{transaction.txid}}</span>
         <h4>Summary</h4>
+        <div class="row" v-show="loading">
+            <div class="col text-center">
+                <div class="spinner-border" style="width: 10rem; height: 10rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>Loading...</p>
+            </div>
+        </div>
+
         <ul>
             <li>Height: {{transaction.height}}</li>
             <li>Type: {{getTypeName(transaction.type)}} ({{transaction.type}})</li>
@@ -163,6 +192,16 @@
                 </tr>
             </thead>
             <tbody>
+                <tr v-show="loading">
+                    <td colspan="3">
+                        <div class="text-center">
+                            <div class="spinner-border" style="width: 10rem; height: 10rem;" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Loading...</p>
+                        </div>
+                    </td>
+                </tr>
                 <tr v-for="(addresstransaction) in addresstransactions" :key="addresstransaction.txid">
                     <td>{{addresstransaction.height}}</td>
                     <td><span style="cursor:pointer;" class="link-primary" v-on:click="search(addresstransaction.txid)">{{addresstransaction.txid}}</span></td>
@@ -220,7 +259,8 @@
                 addressinfo: {},
                 addresstransactions: [],
                 blocksummary: {},
-                transaction: {}
+                transaction: {},
+                loading: true
             }
         },
         methods: {
@@ -243,29 +283,38 @@
             },
             getactivenodes: function (callback) {
                 this.error = "";
+                this.loading = true;
+                const self = this;
                 axios.get('/getactivenodes').then((response) => {
                     if (response.status === 200) {
                         if (response.data && response.data.status === "OK") {
-                            this.activenodes = response.data.data;
+                            self.activenodes = response.data.data;
                         } else {
-                            this.error = `No data or error: ${response.status}: ${response.statusText}\n\n`;
-                            this.error += JSON.stringify(response.data, null, 4);
+                            self.error = `No data or error: ${response.status}: ${response.statusText}\n\n`;
+                            self.error += JSON.stringify(response.data, null, 4);
                         }
                     } else {
-                        this.error = `Non 200 response received: ${response.status}: ${response.statusText}`;
+                        self.error = `Non 200 response received: ${response.status}: ${response.statusText}`;
                     }
 
+                    self.loading = false;
                     if (callback) {
                         callback();
                     }
                 }, error => {
-                    this.error = `Error: ${error}`;
+                    self.loading = false;
+                    self.error = `Error: ${error}`;
+                    if (callback) {
+                        callback();
+                    }
                 });
             },
             genericSearchAPIRequest: function (command, peer, hash, extra, callback) {
                 var errorText = null;
                 var params = {peer: peer, hash: hash};
                 Object.assign(params, extra);
+                this.loading = true;
+                const self = this;
                 axios.get(`/${command}`, {params: params}).then((response) => {
                     if (response.status === 200) {
                         if (response.data && response.data.status === "OK") {
@@ -278,11 +327,13 @@
                         errorText = `Non 200 response received: ${response.status}: ${response.statusText}`;
                     }
 
+                    self.loading = false;
                     if (callback) {
                         callback(errorText, response.data.data);
                     }
                 }, (error) => {
                     errorText = `${error}`;
+                    self.loading = false;
                     if (callback) {
                         callback(errorText);
                     }

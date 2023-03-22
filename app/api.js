@@ -128,7 +128,22 @@ const api = {
                 ApiUtils.apiResponseGeneric(response, findNodesError, findNodesData);
             });
         },
-        getactivenodes: function (request, response) {
+        getcompactnodelist: function (ignore, response) {
+            const query = {};
+            query.status = {"$in": [Enums.nodestatus.New, Enums.nodestatus.Open, Enums.nodestatus.Hidden]};
+
+            Models.Node.find(query, Consts.CompactNodeDataProjection, {lean: true}, function (findNodesError, findNodesData) {
+                if (!findNodesError && findNodesData) {
+                    findNodesData.forEach(function (node) {
+                        if (!node.node_info.version || node.node_info.version === "") {
+                            node.node_info.version = "Unknown";
+                        }
+                    });
+                }
+                ApiUtils.apiResponseGeneric(response, findNodesError, findNodesData);
+            });
+        },
+        getactivenodes: function (ignore, response) {
             const query = {
                 "$and": [
                     {

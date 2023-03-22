@@ -2,7 +2,8 @@
 <div>
     <h1>Node Info</h1>
     <br>
-    <h4>What is the node IP/RPC port you want to explore?</h4>
+    <h4>What is the node IP:RPC port you want to explore?</h4>
+    <span class="text-muted">Hint: You can click on nodes from the <router-link to="/nodetable">Node List</router-link> to auto-fill this in.</span>
     <form class="row g-3" @submit.prevent="">
         <div class="col-auto">
             <input type="text" class="form-control" id="peer" v-model="peer" placeholder="127.0.0.1:38081">

@@ -1,16 +1,11 @@
 <template>
 <div>
     <h1>List of Nodes</h1>
-    <!-- <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div> -->
 
     <div class="row">
         <div class="col">
             <p class="text-center font-weight-bold">
-                All active nodes<br>
-                <label>Include dead nodes? <input type="checkbox" v-model="include_dead"></label>&nbsp;&nbsp;
-                <button type="submit" class="btn btn-primary btn-sm" v-on:click="getnodes()">Refresh Table</button>
+                <button type="submit" class="btn btn-primary btn-sm" v-on:click="getcompactnodelist()" v-bind:disabled="loading">Refresh Table</button>
             </p>
 
             <div class="input-group mb-3">
@@ -28,16 +23,29 @@
                         <th scope="col" class="link-primary table-header-links" v-on:click="sortby('status_port_blockhain')" data-bs-toggle="tooltip" data-bs-placement="top" title="Is the default listen port 37070 open?">Listen</th>
                         <th scope="col" class="link-primary table-header-links" v-on:click="sortby('status_port_publicrpc')" data-bs-toggle="tooltip" data-bs-placement="top" title="Is the default public RPC port 38081 open?">RPC</th>
                         <th scope="col" class="link-primary table-header-links" v-on:click="sortby('peer_count')" ># Peers</th>
+                        <th scope="col" class="link-primary table-header-links" v-on:click="sortby('status')" data-bs-toggle="tooltip" data-bs-placement="top" title="If the node is fully open, hidden behind a firewall, or dead/timed out.">Status</th>
                         <!-- <th scope="col">Time?</th> -->
                         <!-- <th scope="col">Last updated</th> -->
                     </tr>
                 </thead>
                 <tbody>
+                    <tr v-show="loading">
+                        <td colspan="8">
+                            <div class="text-center">
+                                <div class="spinner-border" style="width: 10rem; height: 10rem;" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p>Loading...</p>
+                            </div>
+                        </td>
+                    </tr>
                     <tr style="cursor:pointer;"
                         v-on:click="selectnode(node)"
                         v-for="(node) in filtered_nodes" :key="node._id"
                         v-bind:class="{
-                            'table-active': node._id === selectednodeid
+                            'table-active': node._id === selectednodeid,
+                            'table-danger': node.node_info.version.substring(0, 4) !== '0.21',
+                            'table-warning': node.node_info.version !== '0.21.2'
                         }">
                         <td><router-link style="text-decoration:none;" :to="{name: 'nodeinfo', params: {ip: node.tcp_ipv4_address }}">{{node.tcp_ipv4_address}}</router-link></td>
                         <td>{{node.node_info.version}}</td>
@@ -50,12 +58,14 @@
                         <td>{{node.peer_count}}</td>
                         <!-- <td>{{new Date(node.node_info.time).toUTCString()}}</td> -->
                         <!-- <td>{{new Date(node.last_updated).toLocaleDateString()}} {{new Date(node.last_updated).toLocaleTimeString()}}</td> -->
+                        <td>{{node.status}}</td>
                     </tr>
                 </tbody>
                 <tfoot>
                     <tr class="">
                         <td>Total</td>
                         <td>{{filtered_nodes.length}}</td>
+                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
@@ -80,9 +90,9 @@
         mounted: function() {
             //init Bootstrap 5 tooltips.
             Array.from(document.querySelectorAll('th[data-bs-toggle="tooltip"]')).forEach(tooltipNode => new Tooltip(tooltipNode))
-
-            this.getnodes(function () {
-
+            const self = this;
+            this.getcompactnodelist(function () {
+                self.sortby('node_info.lastblock.height');
             });
 
             // TODO: Make this not suck.
@@ -97,23 +107,22 @@
                 nodes: [],
                 nodefilter: "",
                 selectednodeid: null,
-                include_dead: false,
                 height_hash_map: [],
                 sortbyfield: "status",
-                sortbydirection: -1
+                sortbydirection: -1,
+                loading: true
             }
         },
         methods: {
-            getnodes: function (callback) {
+            getcompactnodelist: function (callback) {
+                this.loading = true;
                 this.error = "";
-                axios.get("/getnodes", {params: {all: this.include_dead}}).then((response) => {
+                const self = this;
+                axios.get("/getcompactnodelist").then((response) => {
                     if (response.status === 200) {
                         if (response.data && response.data.status === "OK") {
                             this.nodes = response.data.data;
                             this.sortnodes();
-                            if (callback) {
-                                callback();
-                            }
                         } else {
                             console.error(`No data or error: ${response.status}: ${response.statusText}`);
                             console.error(response.data);
@@ -121,9 +130,14 @@
                     } else {
                         console.error(`Non 200 response received: ${response.status}: ${response.statusText}`);
                     }
+                    self.loading = false;
+                    if (callback) {
+                        callback();
+                    }
                 }, error => {
                     console.error(error);
-                    this.error = `${error}`;
+                    self.error = `${error}`;
+                    self.loading = false;
                 });
             },
             sortby: function (field) {
