@@ -45,7 +45,7 @@
                         v-bind:class="{
                             'table-active': node._id === selectednodeid,
                             'table-danger': node.node_info.version.substring(0, 4) !== '0.21',
-                            'table-warning': node.node_info.version !== '0.21.2'
+                            'table-warning': node.node_info.version !== '0.21.3'
                         }">
                         <td><router-link style="text-decoration:none;" :to="{name: 'nodeinfo', params: {ip: node.tcp_ipv4_address }}">{{node.tcp_ipv4_address}}</router-link></td>
                         <td>{{node.node_info.version}}</td>
