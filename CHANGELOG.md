@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2024-04-17
+
+### Updated
+
+* Project is now open-source under the Apache license.
+
 ## 2021-12-11
 
 ### Notes

@@ -44,8 +44,8 @@
                         v-for="(node) in filtered_nodes" :key="node._id"
                         v-bind:class="{
                             'table-active': node._id === selectednodeid,
-                            'table-warning': node.node_info.version.substring(0, 4) !== '0.22',
-                            'table-danger': node.node_info.version.substring(0, 4) !== '0.22' && node.node_info.version.substring(0, 4) !== '0.21'
+                            'table-warning': node.node_info.version.substring(0, 7) !== '0.22.11',
+                            'table-danger': node.node_info.version.substring(0, 4) !== '0.22'
                             
                         }">
                         <td><router-link style="text-decoration:none;" :to="{name: 'nodeinfo', params: {ip: node.tcp_ipv4_address }}">{{node.tcp_ipv4_address}}</router-link></td>

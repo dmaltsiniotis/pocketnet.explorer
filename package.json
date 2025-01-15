@@ -1,7 +1,7 @@
 {
-  "name": "nodeexplorer",
+  "name": "node_explorer",
   "version": "1.0.0",
-  "description": "",
+  "description": "An application to crawl the nodes of the Bastyon network.",
   "main": "server.js",
   "scripts": {
     "dev": "node node_modules/nodemon/bin/nodemon.js ./server.js"
@@ -20,6 +20,6 @@
     "jslint": "^0.12.1",
     "nodemon": "^2.0.4"
   },
-  "author": "",
+  "author": "https://bastyon.com/demetri",
   "license": "ISC"
 }
