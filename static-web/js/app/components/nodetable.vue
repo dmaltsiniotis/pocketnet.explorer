@@ -44,7 +44,7 @@
                         v-for="(node) in filtered_nodes" :key="node._id"
                         v-bind:class="{
                             'table-active': node._id === selectednodeid,
-                            'table-warning': node.node_info.version.substring(0, 7) !== '0.22.11',
+                            'table-warning': node.node_info.version.substring(0, 7) !== '0.22.13',
                             'table-danger': node.node_info.version.substring(0, 4) !== '0.22'
                             
                         }">
