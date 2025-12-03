@@ -49,13 +49,13 @@ app.initDatabase(function (dbConnectionError) {
                         process.on("SIGTERM", shutdown("SIGTERM", expressHttpServer)).on("SIGINT", shutdown("SIGINT", expressHttpServer)).on("uncaughtException", shutdown("uncaughtException", expressHttpServer));
                     });
                 } else {
-                    logger.error(startExpressError);
+                    logger.error("startExpress", startExpressError)
                     process.exit(1);
                 }
             });
         });
     } else {
-        logger.error(dbConnectionError);
+        logger.error("initDatabase", dbConnectionError);
         process.exit(1);
     }
 });

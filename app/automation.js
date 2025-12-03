@@ -293,7 +293,7 @@ function _extractNodesFromPeers(node, callback) {
     }
 }
 
-// Hack...
+// TODO: Check for ipv4, ipv6, and i2p. Hack...
 function _normalizePeerAddresses(peer_info, callback) {
     if (peer_info && peer_info.length > 0) {
         Async.each(peer_info, function (peer, callback) {
@@ -440,7 +440,7 @@ function _refreshNodes(nodelist, callback) {
     Logger.info(`Found ${nodelist.length} nodes to update. Starting update...`);
     if (nodelist && nodelist.length > 0) {
         Logger.debug("refreshAllNodes: Node list:");
-        Logger.debug(nodelist.map((node) => node.tcp_ipv4_address));
+        Logger.debug(nodelist.map((node) => `${node.tcp_ipv4_address} (${node.status_port_blockhain}/${node.status_port_publicrpc})`));
 
         Async.series([
             function (callback) {
@@ -450,7 +450,7 @@ function _refreshNodes(nodelist, callback) {
                 callback(null, `Updated last_updated on ${nodelist.length} node(s).`);
             },
             function (callback) {
-                Async.each(nodelist, _probeNodeTcpPortsAndUpdateStatus, function (probeNodeTcpPortsAndUpdateStatusError) {
+                Async.eachLimit(nodelist, Config.timing.max_parallel_requests, _probeNodeTcpPortsAndUpdateStatus, function (probeNodeTcpPortsAndUpdateStatusError) {
                     if (probeNodeTcpPortsAndUpdateStatusError) {
                         callback(probeNodeTcpPortsAndUpdateStatusError);
                     } else {
@@ -459,7 +459,7 @@ function _refreshNodes(nodelist, callback) {
                 });
             },
             function (callback) {
-                Async.each(nodelist, _updateNodeInfo, function (updateNodeInfoError) {
+                Async.eachLimit(nodelist, Config.timing.max_parallel_requests, _updateNodeInfo, function (updateNodeInfoError) {
                     if (updateNodeInfoError) {
                         callback(updateNodeInfoError);
                     } else {
@@ -468,7 +468,7 @@ function _refreshNodes(nodelist, callback) {
                 });
             },
             function (callback) {
-                Async.each(nodelist, _updatePeerInfo, function (updatePeerInfoError) {
+                Async.eachLimit(nodelist, Config.timing.max_parallel_requests, _updatePeerInfo, function (updatePeerInfoError) {
                     if (updatePeerInfoError) {
                         callback(updatePeerInfoError);
                     } else {
@@ -477,7 +477,7 @@ function _refreshNodes(nodelist, callback) {
                 });
             },
             function (callback) {
-                Async.each(nodelist, _updateBlockInfo, function (updateBlockInfoError) {
+                Async.eachLimit(nodelist, Config.timing.max_parallel_requests, _updateBlockInfo, function (updateBlockInfoError) {
                     if (updateBlockInfoError) {
                         callback(updateBlockInfoError);
                     } else {
@@ -486,7 +486,7 @@ function _refreshNodes(nodelist, callback) {
                 });
             },
             function (callback) {
-                Async.each(nodelist, function (node, callback) {
+                Async.eachLimit(nodelist, Config.timing.max_parallel_requests, function (node, callback) {
                     _updateNodeStatus(node, callback);
                 }, function (updateNodeStatusError) {
                     if (updateNodeStatusError) {
@@ -527,7 +527,7 @@ const Automation = {
         });
     },
     newNodes: function (tcp_ipv4_addresses, callback) {
-        Async.each(tcp_ipv4_addresses, function (tcp_ipv4_address, tcp_ipv4_addressesCb) {
+        Async.eachLimit(tcp_ipv4_addresses, Config.timing.max_parallel_requests, function (tcp_ipv4_address, tcp_ipv4_addressesCb) {
             const newNode = {
                 tcp_ipv4_address: tcp_ipv4_address,
                 added_manually: true
@@ -594,7 +594,10 @@ Before: ${new Date(node_info_refresh_age_limit)}`);
             query = {};
         }
 
-        Models.Node.find(query, function (findNodeError, findNodeData) {
+        // We use a little trick here to sort the results in ascending order by status_port_blockhain.
+        //  This will cause all of the open nodes to update first very quickly, before moving on to nodes that are timing out.
+        //  We could have also sorted by the number of peers to get the same behavior of updating open/active nodes first.
+        Models.Node.find(query).sort({ status_port_blockhain: 'asc'}).exec(function (findNodeError, findNodeData) {
             // for each node we know about, call refreshNodeInfo();
             if (!findNodeError) {
                 _refreshNodes(findNodeData, callback);
@@ -641,7 +644,7 @@ Before: ${new Date(node_info_refresh_age_limit)}`);
         Models.Node.find(query, function (findNodeError, findNodeData) {
             // for each node we know about, call refreshNodeInfo();
             if (!findNodeError) {
-                Async.each(findNodeData, function (node, callback) {
+                Async.eachLimit(findNodeData, Config.timing.max_parallel_requests, function (node, callback) {
                     _updateNodeStatus(node, callback);
                 }, function (updateNodeStatusError) {
                     if (updateNodeStatusError) {

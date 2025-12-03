@@ -19,14 +19,7 @@ function _initDatabase(callback) {
     mongoose.connection.once("open", function () {
         logger.info("Database connection established.");
     });
-
-    const dbOptions = { // https://mongoosejs.com/docs/deprecations.html
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        useCreateIndex: true,
-        useFindAndModify: false
-    };
-
+    const dbOptions = {};
     mongoose.connect(config.db.uri, dbOptions, callback);
 }
 

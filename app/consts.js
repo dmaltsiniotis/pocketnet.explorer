@@ -23,6 +23,7 @@ const Consts = {
         tcp_ipv4_address: true,
         last_updated: true,
         last_seen_as_peer: true,
+        last_queried_ports: true,
         status: true,
         label: true,
         status_port_blockhain: true,

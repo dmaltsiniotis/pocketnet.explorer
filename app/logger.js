@@ -41,28 +41,32 @@ function getLogDateTimeStamp() {
     return `${now.getFullYear()}-${now.getMonth().toString().padStart(2, "0")}-${now.getDay().toString().padStart(2, "0")} ${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}.${now.getMilliseconds().toString().padStart(3, "0")}`;
 }
 
-function log(message, log_level) {
+function log(message, object, log_level) {
     if (config.app.log_level >= log_level) {
         if (typeof message === "object") {
             message = "\n" + JSON.stringify(message, censor(message), 4);
         }
-        console.log(`${getLogLevelName(log_level)}: ${getLogDateTimeStamp()}: ${message}`);
+        if (object) {
+            console.log(`${getLogLevelName(log_level)}: ${getLogDateTimeStamp()}: ${message}\n${JSON.stringify(object, censor(object), 4)}`);
+        } else {
+            console.log(`${getLogLevelName(log_level)}: ${getLogDateTimeStamp()}: ${message}`);
+        }
     }
 }
 
 const logger = function () {
     return {
-        debug: function (message) {
-            log(message, LOGLEVEL.DEBUG);
+        debug: function (message, object) {
+            log(message, object, LOGLEVEL.DEBUG);
         },
-        info: function (message) {
-            log(message, LOGLEVEL.INFO);
+        info: function (message, object) {
+            log(message, object, LOGLEVEL.INFO);
         },
-        warn: function (message) {
-            log(message, LOGLEVEL.WARNING);
+        warn: function (message, object) {
+            log(message, object, LOGLEVEL.WARNING);
         },
-        error: function (message) {
-            log(message, LOGLEVEL.ERROR);
+        error: function (message, object) {
+            log(message, object, LOGLEVEL.ERROR);
         }
     };
 };
