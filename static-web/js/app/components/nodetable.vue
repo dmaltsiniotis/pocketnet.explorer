@@ -25,7 +25,7 @@
                         <th scope="col" class="link-primary table-header-links" v-on:click="sortby('peer_count')" ># Peers</th>
                         <th scope="col" class="link-primary table-header-links" v-on:click="sortby('status')" data-bs-toggle="tooltip" data-bs-placement="top" title="If the node is fully open, hidden behind a firewall, or dead/timed out.">Status</th>
                         <!-- <th scope="col">Time?</th> -->
-                        <!-- <th scope="col">Last updated</th> -->
+                        <th scope="col" class="link-primary table-header-links" v-on:click="sortby('last_queried_ports')" >Last Queried At</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -44,7 +44,7 @@
                         v-for="(node) in filtered_nodes" :key="node._id"
                         v-bind:class="{
                             'table-active': node._id === selectednodeid,
-                            'table-warning': node.node_info.version.substring(0, 7) !== '0.22.13',
+                            'table-warning': node.node_info.version.substring(0, 7) !== '0.22.20',
                             'table-danger': node.node_info.version.substring(0, 4) !== '0.22'
                             
                         }">
@@ -57,9 +57,9 @@
                         <td>{{node.status_port_blockhain}}</td>
                         <td>{{node.status_port_publicrpc}}</td>
                         <td>{{node.peer_count}}</td>
-                        <!-- <td>{{new Date(node.node_info.time).toUTCString()}}</td> -->
-                        <!-- <td>{{new Date(node.last_updated).toLocaleDateString()}} {{new Date(node.last_updated).toLocaleTimeString()}}</td> -->
                         <td>{{node.status}}</td>
+                        <!-- <td>{{new Date(node.node_info.time).toUTCString()}}</td> -->
+                        <td>{{node.last_queried_ports.toLocaleString()}}</td>
                     </tr>
                 </tbody>
                 <tfoot>
@@ -75,7 +75,7 @@
                         <td></td>
                         <td></td>
                         <!-- <td></td> -->
-                        <!-- <td></td> -->
+                        <td></td>
                     </tr>
                 </tfoot>
             </table>
@@ -115,6 +115,16 @@
             }
         },
         methods: {
+            hydratedata: function () {
+                if (this.nodes) {
+                    this.nodes.forEach(function(node)
+                    {
+                        node.last_updated = new Date(node.last_updated);
+                        node.last_queried_ports = new Date(node.last_queried_ports);
+                        node.last_seen_as_peer = new Date(node.last_seen_as_peer);
+                    });
+                }
+            },
             getcompactnodelist: function (callback) {
                 this.loading = true;
                 this.error = "";
@@ -123,6 +133,7 @@
                     if (response.status === 200) {
                         if (response.data && response.data.status === "OK") {
                             this.nodes = response.data.data;
+                            this.hydratedata();
                             this.sortnodes();
                         } else {
                             console.error(`No data or error: ${response.status}: ${response.statusText}`);

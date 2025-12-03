@@ -8,6 +8,7 @@ const config = {
     timing: {
         tcp_probe_timeout: Number(process.env.TCP_PROBE_TIMEOUT || 5000),                       //  5 second default. How long to wait for TCP network probes.
         rpc_timeout: Number(process.env.RPC_TIMEOUT || 20000),                                  // 20 second default. How long to wait for RPC network calls.
+        max_parallel_requests: Number(process.env.MAX_PARALLEL_REQUESTS || 10),                 // 10 request default. The maximum number of operations to run in parallel when querying for TCP ports, RCP info, etc...
         node_check_interval: Number(process.env.NODE_CHECK_INTERVAL || 120000),                 //  2 minute default. How often to run the process that checks to see if nodes need their info refreshed.
         node_info_refresh_age_limit: Number(process.env.NODE_INFO_REFRESH_AGE_LIMIT || 600000), // 10 minute default. If a node hasn't been refreshed in the last X (this value) initate an update of the node information.
         node_considered_dead: Number(process.env.NODE_CONSIDERED_DEAD || 3600000)               // 20 minute default. If a previously detected node cannot be reached anymore, consider it dead after this amount of time has passed.
@@ -22,6 +23,7 @@ const config = {
         logger.debug(`DB uri: ${config.db.uri}`);
         logger.debug(`TCP probe timeout: ${config.timing.tcp_probe_timeout} (${config.timing.tcp_probe_timeout / 1000.0} seconds)`);
         logger.debug(`RPC timeout: ${config.timing.rpc_timeout} (${config.timing.rpc_timeout / 1000.0} seconds)`);
+        logger.debug(`Max parallel requests: ${config.timing.max_parallel_requests}`);
         logger.debug(`Node check interval: ${config.timing.node_check_interval} (${config.timing.node_check_interval / 1000.0 / 60.0} minutes)`);
         logger.debug(`Node info refresh age limit: ${config.timing.node_info_refresh_age_limit} (${config.timing.node_info_refresh_age_limit / 1000.0 / 60.0} minutes)`);
         logger.debug(`Node considered dead after: ${config.timing.node_considered_dead} (${config.timing.node_considered_dead / 1000.0 / 60.0} minutes)`);
